@@ -8,18 +8,10 @@ from mne.preprocessing import ICA
 
 import pandas as pd
 import matplotlib.pyplot as plt
+import pickle
 
 
-""" def rename_chan(raw) -> None:
-    '''
-    Rename channels in an MNE raw object to match the standard 1005 montage.
-
-    Parameters:
-        raw: The MNE raw object containing EEG data. The channels in this object will be renamed according to the standard 1005 montage.
-
-    Returns:
-        None: The function modifies the `raw` object in place and does not return anything.
-    '''
+def rename_chan(raw) -> None:
     mapping = {
         'Fc5.': 'FC5', 'Fc3.': 'FC3', 'Fc1.': 'FC1', 'Fcz.': 'FCz', 'Fc2.': 'FC2', 'Fc4.': 'FC4', 'Fc6.': 'FC6',
         'C5..': 'C5', 'C3..': 'C3', 'C1..': 'C1', 'Cz..': 'Cz', 'C2..': 'C2', 'C4..': 'C4', 'C6..': 'C6',
@@ -30,7 +22,7 @@ import matplotlib.pyplot as plt
         'P7..': 'P7', 'P5..': 'P5', 'P3..': 'P3', 'P1..': 'P1', 'Pz..': 'Pz', 'P2..': 'P2', 'P4..': 'P4', 'P6..': 'P6', 'P8..': 'P8',
         'Po7.': 'PO7', 'Po3.': 'PO3', 'Poz.': 'POz', 'Po4.': 'PO4', 'Po8.': 'PO8', 'O1..': 'O1', 'Oz..': 'Oz', 'O2..': 'O2', 'Iz..': 'Iz'
     }
-    raw.rename_channels(mapping) """
+    raw.rename_channels(mapping)
 
 
 def load_data(subjects, runs):
@@ -43,7 +35,7 @@ def load_data(subjects, runs):
         raws = [read_raw_edf(f, preload=True) for f in raw_fnames]
         raw = concatenate_raws(raws)
 
-        #rename_chan(raw)
+        rename_chan(raw)
 
         all_raws.append(raw)
 
@@ -70,3 +62,13 @@ def preprocess(raw, picks):
     raw_clean = raw.copy()
     ica_filter(raw_clean, picks)
     filter_alpha_beta(raw_clean)
+
+
+def save_interactive_plot(raw, filename):
+    ask = input("Do you want to plot an interactive graphic? (y/n)")
+    if ask == 'y':
+        with open(f'data/{filename}.pkl', 'wb') as f:
+            pickle.dump(raw, f)
+        print("Now open a terminal and type: python3 utils/plot.py")
+    else:
+        print("See you soon!")
