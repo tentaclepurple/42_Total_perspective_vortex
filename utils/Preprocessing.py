@@ -45,13 +45,50 @@ def load_data(subjects, runs):
     return raw
 
 
+def load_and_preprocess_data(subjects: list[int], runs: list[int]) -> Epochs:
+    """
+    Parameters:
+        subjects: List of subject IDs to load the data for.
+        runs: List of run IDs corresponding to the experiments.
+
+    Returns:
+        Epochs: Concatenated epochs of the preprocessed EEG data.
+    """
+    all_epochs = []
+    for subject in subjects:
+        raw_fnames = eegbci.load_data(subject, runs)
+        raws = [read_raw_edf(f, preload=True) for f in raw_fnames]
+        raw = concatenate_raws(raws)
+
+        rename_channels(raw)
+
+
+
+        montage = make_standard_montage('standard_1005')
+        raw.set_montage(montage)
+        raw.filter(7., 32., fir_design='firwin', skip_by_annotation='edge')
+
+        events, _ = events_from_annotations(raw)
+
+        event_id = dict(T1=1, T2=2)  # Only keep T1 and T2
+        epochs = Epochs(raw, events, event_id, tmin, tmax, proj=True, picks=pick_types(raw.info, eeg=True), baseline=None, preload=True)
+
+        epochs = epochs.crop(tmin= 1., tmax=2.)
+
+        all_epochs.append(epochs)
+
+    return mne.concatenate_epochs(all_epochs)
+
+
 def ica_filter(raw, picks):
     raw.filter(l_freq=1.0, h_freq=None)
     ica = mne.preprocessing.ICA(n_components=20, random_state=42)
     ica.fit(raw, picks=picks)
-    eog_indices, eog_scores = ica.find_bads_eog(raw, ch_name='Fpz.')
-    ica.excluda.extend(eog_indices)
+    eog_indices, eog_scores = ica.find_bads_eog(raw, ch_name='Fpz')
+    ica.exclude.extend(eog_indices)
     ica.apply(raw, exclude=ica.exclude)
+
+    return raw
 
 
 def filter_alpha_beta(raw):
