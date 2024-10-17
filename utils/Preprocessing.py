@@ -111,10 +111,13 @@ def load_and_preprocess_data(subjects: list[int], runs: list[int]) -> Epochs:
 
         rename_chan(raw)
 
+        raw.notch_filter(freqs=60)
+
+        raw = ica_filter(raw, picks=pick_types(raw.info, eeg=True))
 
         montage = make_standard_montage('standard_1005')
         raw.set_montage(montage)
-        filter_alpha_beta(raw)
+        #filter_alpha_beta(raw)
         #raw.filter(7., 32., fir_design='firwin', skip_by_annotation='edge')
 
         events, _ = events_from_annotations(raw)
