@@ -2,13 +2,62 @@
 # coding: utf-8
 
 import mne
+import warnings
+import numpy as np
+import pandas as pd
+import time
+from tqdm import tqdm
+from IPython.display import display, HTML
+from typing import List
+import pickle
+
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import cross_val_score, GridSearchCV
+from sklearn.linear_model import LogisticRegression
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.base import BaseEstimator, TransformerMixin, ClassifierMixin
+from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
+from sklearn.exceptions import ConvergenceWarning
+
+from mne import Epochs, pick_types, events_from_annotations
+from mne.channels import make_standard_montage
 from mne.io import concatenate_raws, read_raw_edf
 from mne.datasets import eegbci
-from mne.preprocessing import ICA
+from mne.decoding import CSP
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import pickle
+
+def ica_filter(raw, picks):
+    raw.filter(l_freq=1.0, h_freq=None)
+    ica = mne.preprocessing.ICA(n_components=20, random_state=42)
+    ica.fit(raw, picks=picks)
+    eog_indices, eog_scores = ica.find_bads_eog(raw, ch_name='Fpz')
+    ica.exclude.extend(eog_indices)
+    ica.apply(raw, exclude=ica.exclude)
+
+    return raw
+
+
+def filter_alpha_beta(raw):
+    raw.filter(l_freq=8.0, h_freq=30.0)
+
+
+def preprocess(raw, picks):
+    raw_clean = raw.copy()
+    ica_filter(raw_clean, picks)
+    filter_alpha_beta(raw_clean)
+
+
+def save_interactive_plot(raw, filename):
+    ask = input("Do you want to plot an interactive graphic? (y/n)")
+    if ask == 'y':
+        with open(f'data/{filename}.pkl', 'wb') as f:
+            pickle.dump(raw, f)
+        print("Now open a terminal and type: python3 utils/plot.py")
+    else:
+        print("See you soon!")
 
 
 def rename_chan(raw) -> None:
@@ -60,52 +109,23 @@ def load_and_preprocess_data(subjects: list[int], runs: list[int]) -> Epochs:
         raws = [read_raw_edf(f, preload=True) for f in raw_fnames]
         raw = concatenate_raws(raws)
 
-        rename_channels(raw)
-
+        rename_chan(raw)
 
 
         montage = make_standard_montage('standard_1005')
         raw.set_montage(montage)
-        raw.filter(7., 32., fir_design='firwin', skip_by_annotation='edge')
+        filter_alpha_beta(raw)
+        #raw.filter(7., 32., fir_design='firwin', skip_by_annotation='edge')
 
         events, _ = events_from_annotations(raw)
 
         event_id = dict(T1=1, T2=2)  # Only keep T1 and T2
-        epochs = Epochs(raw, events, event_id, tmin, tmax, proj=True, picks=pick_types(raw.info, eeg=True), baseline=None, preload=True)
 
-        epochs = epochs.crop(tmin= 1., tmax=2.)
+        tmin, tmax = -1, 2
+        epochs = Epochs(raw, events, event_id, tmin=tmin, tmax=tmax, proj=True, picks=pick_types(raw.info, eeg=True), baseline=None, preload=True)
+
+        #epochs = epochs.crop(tmin= 1., tmax=2.)
 
         all_epochs.append(epochs)
 
     return mne.concatenate_epochs(all_epochs)
-
-
-def ica_filter(raw, picks):
-    raw.filter(l_freq=1.0, h_freq=None)
-    ica = mne.preprocessing.ICA(n_components=20, random_state=42)
-    ica.fit(raw, picks=picks)
-    eog_indices, eog_scores = ica.find_bads_eog(raw, ch_name='Fpz')
-    ica.exclude.extend(eog_indices)
-    ica.apply(raw, exclude=ica.exclude)
-
-    return raw
-
-
-def filter_alpha_beta(raw):
-    raw.filter(l_freq=8.0, h_freq=30.0)
-
-
-def preprocess(raw, picks):
-    raw_clean = raw.copy()
-    ica_filter(raw_clean, picks)
-    filter_alpha_beta(raw_clean)
-
-
-def save_interactive_plot(raw, filename):
-    ask = input("Do you want to plot an interactive graphic? (y/n)")
-    if ask == 'y':
-        with open(f'data/{filename}.pkl', 'wb') as f:
-            pickle.dump(raw, f)
-        print("Now open a terminal and type: python3 utils/plot.py")
-    else:
-        print("See you soon!")
