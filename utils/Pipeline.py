@@ -195,3 +195,35 @@ class WaveletTransform:
             X_wavelet.append(trial_wavelet)
         
         return np.array(X_wavelet)
+
+
+class MyPCA(BaseEstimator, TransformerMixin):
+    def __init__(self, n_components):
+        self.n_components = n_components
+        self.components_ = None
+        self.mean_ = None
+
+    def fit(self, X, y=None):
+        self.mean_ = np.mean(X, axis=0)
+        X_centered = X - self.mean_
+
+        covariance_matrix = np.cov(X_centered, rowvar=False)
+
+        eigenvalues, eigenvectors = np.linalg.eigh(covariance_matrix)
+
+        sorted_idx = np.argsort(eigenvalues)[::-1]
+        eigenvectors = eigenvectors[:, sorted_idx]
+        eigenvalues = eigenvalues[sorted_idx]
+
+        self.components_ = eigenvectors[:, :self.n_components]
+
+        return self
+
+    def transform(self, X):
+        X_centered = X - self.mean_
+        X_transformed = np.dot(X_centered, self.components_)
+        return X_transformed
+
+    def fit_transform(self, X, y=None):
+        self.fit(X, y)
+        return self.transform(X)
