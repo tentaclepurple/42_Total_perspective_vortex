@@ -2,4 +2,4 @@ data
 *.pdf
 *.md
 __pycache__
-jc
+jc/*
