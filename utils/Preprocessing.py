@@ -2,31 +2,12 @@
 # coding: utf-8
 
 import mne
-import warnings
-import numpy as np
-import pandas as pd
-import time
-from tqdm import tqdm
-from IPython.display import display, HTML
-from typing import List
 import pickle
-
-from sklearn.pipeline import Pipeline
-from sklearn.model_selection import cross_val_score, GridSearchCV
-from sklearn.linear_model import LogisticRegression
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.svm import SVC
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
-from sklearn.base import BaseEstimator, TransformerMixin, ClassifierMixin
-from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
-from sklearn.exceptions import ConvergenceWarning
 
 from mne import Epochs, pick_types, events_from_annotations
 from mne.channels import make_standard_montage
 from mne.io import concatenate_raws, read_raw_edf
 from mne.datasets import eegbci
-from mne.decoding import CSP
 
 
 def ica_filter(raw, picks):
@@ -41,7 +22,7 @@ def ica_filter(raw, picks):
 
 
 def filter_alpha_beta(raw):
-    raw.filter(l_freq=8.0, h_freq=30.0)
+    raw.filter(l_freq=8.0, h_freq=40.0)
 
 
 def preprocess(raw, picks):
@@ -56,8 +37,6 @@ def save_interactive_plot(raw, filename):
         with open(f'data/{filename}.pkl', 'wb') as f:
             pickle.dump(raw, f)
         print("Now open a terminal and type: python3 utils/plot.py")
-    else:
-        print("See you soon!")
 
 
 def rename_chan(raw) -> None:

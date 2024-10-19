@@ -1,29 +1,9 @@
-import mne
-import warnings
 import numpy as np
-import pandas as pd
-import time
 import pywt
-from tqdm import tqdm
-from IPython.display import display, HTML
-from typing import List
 
-from sklearn.pipeline import Pipeline
-from sklearn.model_selection import cross_val_score, GridSearchCV
-from sklearn.linear_model import LogisticRegression
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
-from sklearn.base import BaseEstimator, TransformerMixin, ClassifierMixin
-from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
-from sklearn.exceptions import ConvergenceWarning
-from sklearn.model_selection import cross_val_score
+from sklearn.base import BaseEstimator, TransformerMixin
 
-from mne import Epochs, pick_types, events_from_annotations
-from mne.channels import make_standard_montage
-from mne.io import concatenate_raws, read_raw_edf
-from mne.datasets import eegbci
 from mne.decoding import CSP
 
 
